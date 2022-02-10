@@ -114,7 +114,7 @@ def return_bingo_list():
         header = ' <tr> <th>bingo</th> <th>nombres de grilles générées</th> </tr>\n'
         lines = '\n'.join(
             f' <tr> <td><a href="/{bingo}">{bingo}</a></td> <td>{hits}</td> </tr>\n'
-            for bingo, hits in stats.items()
+            for bingo, hits in sorted(stats.items(), key=lambda d: d[1], reverse=True)
         )
         html = '<table>' + header + lines + '</table>'
     else:
