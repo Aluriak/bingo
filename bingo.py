@@ -12,6 +12,8 @@ NB_RAW = 5
 NB_COL = 5
 NB_CELL = NB_RAW * NB_COL
 
+BINGO_DIR = 'bingos/'
+STAT_FILE = 'stats.json'
 RESOURCE_PATH = 'https://bingo.bourneuf.net/part'
 RESOURCE_PATH = 'https://www.buzzwordbingogame.com/parts'
 
@@ -78,10 +80,43 @@ def generate_bingo(jsonfile, resource_path:str):
     html = MODEL.format(res_path=resource_path, title=title, shout=shout, table=''.join(yield_table(words)))
     return html
 
+def save_stats(bingo_uid):
+    try:
+        with open(STAT_FILE) as fd:
+            stats = json.load(fd)
+    except:
+        stats = {}
+
+    stats.setdefault(bingo_uid, 0)
+    stats[bingo_uid] += 1
+
+    with open(STAT_FILE, 'w') as fd:
+        json.dump(stats, fd)
+
 
 @app.route('/<bingo>')
 def return_bingo(bingo:str):
-    fname = bingo + '.json'
+    fname = os.path.join(BINGO_DIR, bingo + '.json')
     if os.path.exists(fname):
+        save_stats(bingo)
         return generate_bingo(fname, RESOURCE_PATH)
     abort(404)
+
+
+@app.route('/')
+def return_bingo_list():
+    if os.path.exists(STAT_FILE):
+        with open(STAT_FILE) as fd:
+            stats = json.load(fd)
+    else:
+        stats = {}
+    if stats:
+        header = ' <tr> <th>bingo</th> <th>nombres de grilles générées</th> </tr>\n'
+        lines = '\n'.join(
+            f' <tr> <td><a href="/{bingo}">{bingo}</a></td> <td>{hits}</td> </tr>\n'
+            for bingo, hits in stats.items()
+        )
+        html = '<table>' + header + lines + '</table>'
+    else:
+        html = 'No bingo used for now'
+    return html
